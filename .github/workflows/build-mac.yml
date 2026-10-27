@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   mac:
     runs-on: macos-14
@@ -40,3 +43,12 @@ jobs:
         with:
           name: Melt-Mac
           path: build/Melt_artefacts/Release/out
+
+      - name: Publish as a GitHub Release (stable download link)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete mac-latest --yes --cleanup-tag || true
+          gh release create mac-latest build/Melt_artefacts/Release/Melt-Mac.zip \
+            --title "Melt for Mac (latest build)" --notes-file .github/mac-release-notes.md --target "${{ github.sha }}"
