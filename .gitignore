@@ -1,0 +1,8 @@
+build/
+build-win/
+JUCE/
+*.zip
+*.wav
+*.log
+test/render_test
+test/*.png
