@@ -10,11 +10,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure (universal: Apple Silicon + Intel)
-        run: cmake -B build -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+      - name: "Configure (universal: Apple Silicon + Intel)"
+        run: |
+          set -o pipefail
+          cmake -B build -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 2>&1 | tee configure.log \
+            || { echo "::error title=configure::$(tail -c 6000 configure.log | tr '\n' ' ')"; exit 1; }
 
       - name: Build
-        run: cmake --build build --config Release --target Melt_VST3 Melt_AU Melt_Standalone -- -quiet
+        run: |
+          set -o pipefail
+          cmake --build build --config Release --target Melt_VST3 Melt_AU Melt_Standalone -- -quiet 2>&1 | tee build.log \
+            || { echo "::error title=build::$(grep -E 'error|Error' build.log | tail -c 6000 | tr '\n' ' ')"; exit 1; }
 
       - name: Ad-hoc sign and package
         run: |
@@ -26,6 +32,7 @@ jobs:
             codesign --verify --verbose "$b"
           done
           lipo -info out/Melt.vst3/Contents/MacOS/Melt
+          echo "::notice title=lipo::$(lipo -info out/Melt.vst3/Contents/MacOS/Melt)"
           cd out && ditto -c -k --keepParent . ../Melt-Mac.zip
 
       - name: Upload

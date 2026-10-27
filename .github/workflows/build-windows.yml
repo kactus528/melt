@@ -11,7 +11,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -B build -G "Visual Studio 17 2022" -A x64
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake -B build -A x64 2>&1 | tee configure.log \
+            || { echo "::error title=configure::$(tail -c 6000 configure.log | tr '\n' ' ')"; exit 1; }
 
       - name: Build
         run: cmake --build build --config Release --target Melt_VST3 Melt_Standalone
